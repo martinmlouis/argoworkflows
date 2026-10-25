@@ -168,3 +168,17 @@ spec:
         template: echo
         arguments:
           parameters: [{name: message, value: D}]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: hello
+  templates:
+    - name: hello
+      script:
+        image: busybox
+        command: [bash]
+        source: |
+          echo "Hello"

@@ -14,3 +14,23 @@ spec:
           limits:
             memory: 32Mi
             cpu: 100m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow                  # new type of k8s spec
+metadata:
+  generateName: hello-world-    # name of the workflow spec
+  namespace: argo
+spec:
+  entrypoint: one-hello # invoke the hello-world template
+  templates:
+    - name: one-hello       # name of the template
+      container:
+        image: busybox
+        command: [ echo ]
+        args: [ "hello" ]
+              
+    - name: two-hello # name of the template
+      container:
+        image: busybox
+        command: [echo]
+        args: ["hello"]

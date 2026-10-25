@@ -28,9 +28,64 @@ spec:
         image: busybox
         command: [ echo ]
         args: [ "hello" ]
-              
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-parameters-
+spec:
+  # invoke the print-message template with "hello world" as the argument to the message parameter
+  entrypoint: print-message
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+
+  templates:
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message       # parameter declaration
+    container:
+      # run echo with that message input parameter as args
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]
     - name: two-hello # name of the template
       container:
         image: busybox
         command: [echo]
         args: ["hello"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-parameters-
+spec:
+  # invoke the print-message template with "hello world" as the argument to the message parameter
+  entrypoint: message
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+
+  templates:
+  - name: message
+    inputs:
+      parameters:
+      - name: message       # parameter declaration
+    container:
+      # run echo with that message input parameter as args
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]
+
+  - name: workflow-message
+    inputs:
+      parameters:
+        - name: message
+          value: "{{workflow.arguments.parameters.message}}"
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]

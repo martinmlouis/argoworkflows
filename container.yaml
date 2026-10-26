@@ -826,3 +826,98 @@ spec:
       args: ["hello"]
 ---
 # https://argo-workflows.readthedocs.io/en/latest/walk-through/annotations/
+---
+# in a workflow. The resource template type accepts any k8s manifest
+# (including CRDs) and can perform any `kubectl` action against it (e.g. create,
+# apply, delete, patch).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-jobs-
+  namespace: argo
+spec:
+  entrypoint: pi-tmpl
+  templates:
+  - name: pi-tmpl
+    resource:                   # indicates that this is a resource template
+      action: create            # can be any kubectl action (e.g. create, delete, apply, patch)
+      # The successCondition and failureCondition are optional expressions.
+      # If failureCondition is true, the step is considered failed.
+      # If successCondition is true, the step is considered successful.
+      # They use kubernetes label selection syntax and can be applied against any field
+      # of the resource (not just labels). Multiple AND conditions can be represented by comma
+      # delimited expressions.
+      # For more details: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+      successCondition: status.succeeded > 0
+      failureCondition: status.failed > 3
+      manifest: |               #put your kubernetes spec here
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: pi-job-
+          namespace: argo
+        spec:
+          ttlSecondsAfterFinished: 180
+          template:
+            metadata:
+              name: pi
+            spec:
+              containers:
+              - name: pi
+                image: perl
+                command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+              restartPolicy: Never
+          backoffLimit: 4
+---
+# kubectl create this cron job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+---          
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-
+spec:
+  entrypoint: cront-tmpl
+  templates:
+  - name: cront-tmpl
+    resource:
+      action: patch
+      mergeStrategy: merge                 # Must be one of [strategic merge json]
+      manifest: |
+        apiVersion: batch/v1
+        kind: CronJob
+        metadata:
+         name: hello
+        spec:
+          schedule: "30 * * * *"
+          jobTemplate:
+          spec:
+            template:
+              spec:
+                containers:
+                - name: hello
+                  image: busybox:1.27
+                  imagePullPolicy: IfNotPresent
+                  command:
+                  - /bin/sh
+                  - -c
+                  - echo Hello from the Kubernetes cluster
+                restartPolicy: OnFailure

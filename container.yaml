@@ -412,12 +412,12 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loop-sequence-
+  generateName: with-items-
 spec:
-  entrypoint: loop-sequence-example
+  entrypoint: withitems-example
 
   templates:
-  - name: loop-sequence-example
+  - name: withitems-example
     steps:
     - - name: hello-x4
         template: hello
@@ -428,8 +428,8 @@ spec:
             - name: last
               value: "{{item.last}}"
         withItems:
-          - { 'first' : 'martin' }
-          - { 'last' : 'lourduswamy' }
+          - { first : 'martin' , last : 'lourduswamy' }
+
   - name: hello
     inputs:
       parameters:

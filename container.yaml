@@ -304,3 +304,56 @@ spec:
       command: [echo]
       args: ["{{inputs.parameters.message}}"]
                                                                         51,1          Bot
+---
+# To run this example, first create the secret by running:
+# kubectl create secret generic my-secret --from-literal=mypassword=S00perS3cretPa55word
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: secret-example-
+spec:
+  entrypoint: print-secrets
+  # To access secrets as files, add a volume entry in spec.volumes[] and
+  # then in the container template spec, add a mount using volumeMounts.
+  volumes:
+  - name: my-secret-vol
+    secret:
+      secretName: secret-basic-auth
+  templates:
+  - name: print-secrets
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ['
+        echo "secret from env: $SECRET_USERNAME:$SECRET_PASSWORD";
+        echo "config from env: $CONFIGMAP_USERNAME:$CONFIGMAP_PASSWORD";
+        echo "secret from file: `ls -l /secret/mountpath`"
+        echo "secret from file: `cat /secret/mountpath/username`"
+        echo "secret from file: `cat /secret/mountpath/password`"
+      ']
+      # To access secrets as environment variables, use the k8s valueFrom and
+      # secretKeyRef constructs.
+      env:
+      - name: SECRET_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: secret-basic-auth
+            key: username
+      - name: SECRET_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: secret-basic-auth
+            key: password
+      - name: CONFIGMAP_USERNAME
+        valueFrom:
+          configMapKeyRef:
+            name: configmap-basic-auth
+            key: username
+      - name: CONFIGMAP_PASSWORD
+        valueFrom:
+          configMapKeyRef:
+            name: configmap-basic-auth
+            key: password
+      volumeMounts:
+      - name: my-secret-vol     # mount file containing secret at /secret/mountpath
+        mountPath: "/secret/mountpath"      

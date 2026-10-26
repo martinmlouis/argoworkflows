@@ -757,3 +757,39 @@ spec:
       image: alpine:3.23
       command: [sh, -c]
       args: ["echo boohoo!"]  
+---
+# You can use the field activeDeadlineSeconds to limit the elapsed time for a workflow:
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 180
+  entrypoint: retry
+  templates:
+  - name: retry
+    retryStrategy: {}
+    container:
+      image: python:alpine3.23
+      command: ["python", -c]
+      # fail with a 66% probability
+      args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+---
+#You can limit the elapsed time for a specific template as well:
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-
+  namespace: argo
+spec:
+  entrypoint: retry
+  templates:
+  - name: retry
+    activeDeadlineSeconds: 180
+    retryStrategy: {}
+    container:
+      image: python:alpine3.23
+      command: ["python", -c]
+      # fail with a 66% probability
+      args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

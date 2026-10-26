@@ -357,3 +357,85 @@ spec:
       volumeMounts:
       - name: my-secret-vol     # mount file containing secret at /secret/mountpath
         mountPath: "/secret/mountpath"      
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-sequence-
+spec:
+  entrypoint: loop-sequence-example
+
+  templates:
+  - name: loop-sequence-example
+    steps:
+    - - name: hello-x4
+        template: hello
+        withSequence:
+          count: "4"
+
+  - name: hello
+    container:
+      image: busybox
+      command: [echo]
+      args: ["hello"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-sequence-
+spec:
+  entrypoint: loop-sequence-example
+
+  templates:
+  - name: loop-sequence-example
+    steps:
+    - - name: hello-x4
+        template: hello
+        arguments:
+          parameters:
+            - name: message
+              value: "{{item}}"
+        withItems:
+          - hello
+          - hello
+          - hello
+          - hello
+  - name: hello
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.message}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loop-sequence-
+spec:
+  entrypoint: loop-sequence-example
+
+  templates:
+  - name: loop-sequence-example
+    steps:
+    - - name: hello-x4
+        template: hello
+        arguments:
+          parameters:
+            - name: first
+              value: "{{item.first}}"
+            - name: last
+              value: "{{item.last}}"
+        withItems:
+          - { 'first' : 'martin' }
+          - { 'last' : 'lourduswamy' }
+  - name: hello
+    inputs:
+      parameters:
+        - name: first
+        - name: last
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.first}}:{{inputs.parameters.last}}"]

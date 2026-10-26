@@ -475,3 +475,40 @@ spec:
       image: busybox
       command: [echo]
       args: ["{{inputs.parameters.first}}:{{inputs.parameters.last}}"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: with-param-
+spec:
+  entrypoint: with-param-example
+  templates:
+  - name: with-param-example
+    steps:
+    - - name: hello-generate-x4
+        template: hello-generate-x4
+    - - name: hello-x4
+        template: hello
+        arguments:
+          parameters:
+            - name: first
+              value: "{{item.first}}"
+            - name: last
+              value: "{{item.last}}"
+        withParam: "{{steps.hello-generate-x4.outputs.result}}"
+  - name: hello-generate-x4
+    script:
+      image: busybox
+      command: [sh, -c]
+      source: |
+               echo '{ "first" : "martin" , "last" : "lourduswamy" }'
+
+  - name: hello
+    inputs:
+      parameters:
+        - name: first
+        - name: last
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.first}}:{{inputs.parameters.last}}"]        

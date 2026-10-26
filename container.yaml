@@ -824,3 +824,5 @@ spec:
       image: busybox
       command: [echo]
       args: ["hello"]
+---
+# https://argo-workflows.readthedocs.io/en/latest/walk-through/annotations/

@@ -712,3 +712,48 @@ spec:
       command: ["python", -c]
       # fail with a 66% probability
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: intentional-success
+  onExit: exit-handler                  # invoke exit-handler template at end of the workflow
+  templates:
+  # primary workflow template
+  - name: intentional-success
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo intentional success; exit 0"]
+
+  # Exit handler templates
+  # After the completion of the entrypoint template, the status of the
+  # workflow is made available in the global variable {{workflow.status}}.
+  # {{workflow.status}} will be one of: Succeeded, Failed, Error
+  - name: exit-handler
+    steps:
+    - - name: notify
+        template: send-email
+      - name: celebrate
+        template: celebrate
+        when: "{{workflow.status}} == Succeeded"
+      - name: cry
+        template: cry
+        when: "{{workflow.status}} != Succeeded"
+  - name: send-email
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"]
+  - name: celebrate
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hooray!"]
+  - name: cry
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo boohoo!"]  
